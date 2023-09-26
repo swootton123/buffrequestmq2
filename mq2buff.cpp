@@ -9,20 +9,36 @@ PreSetup("BuffRequestPlugin");
 // Define a map to store the short spell name to full spell name mappings
 std::map<std::string, std::string> spellNameMappings;
 
-// Function to load the short spell name mappings from "shortspellnames.txt"
+// Define a map to store class short names
+std::map<std::string, std::string> classShortNames = {
+    {"shaman", "shm"},
+    {"warrior", "war"},
+    {"cleric", "clr"},
+    {"monk", "mnk"},
+    {"Enchanter", "enc"},
+    {"wizard", "wiz"},
+    {"necromancer", "nec"},
+    {"druid", "dru"},
+    {"bard", "brd"},
+    {"ranger", "rng"},
+    {"rogue", "rog"},
+    {"paladin", "pal"},
+    {"shadow_knight", "SHD"},
+    // Add more mappings as needed
+};
+
+// Function to load the short spell name mappings from "buffshortnames.ini"
 void LoadShortSpellNames() {
-    std::ifstream file("shortspellnames.txt");
-    if (file.is_open()) {
-        std::string line;
-        while (std::getline(file, line)) {
-            size_t pos = line.find("\t");
-            if (pos != std::string::npos) {
-                std::string shortName = line.substr(0, pos);
-                std::string fullName = line.substr(pos + 1);
-                spellNameMappings[shortName] = fullName;
-            }
-        }
-        file.close();
+    char iniFileName[MAX_STRING] = {0};
+    sprintf_s(iniFileName, "%s\\buffshortnames.ini", gszINIPath);
+    char sectionName[MAX_STRING] = "ShortSpellNames";
+
+    // Clear the existing mappings
+    spellNameMappings.clear();
+
+    // Read the short spell names from the INI file
+    for (std::map<std::string, std::string>::iterator it = spellNameMappings.begin(); it != spellNameMappings.end(); ++it) {
+        GetPrivateProfileString(sectionName, it->first.c_str(), "", it->second, MAX_STRING, iniFileName);
     }
 }
 
@@ -91,9 +107,11 @@ public:
             }
 
             std::string casterCharacter;
+            std::string casterClass;
+            int casterLevel;
 
             // Find the appropriate caster character and verify class and level
-            if (FindCasterAndVerify(casterName, buffName, casterCharacter, requiredClass, requiredLevel)) {
+            if (FindCasterAndVerify(targetPlayer, casterCharacter, casterClass, casterLevel, buffName)) {
                 // Check if you have the spell in your spellbook
                 if (MemorizeSpellByName(buffName.c_str(), 8)) {
                     // Successfully memorized the spell in gem 8
@@ -125,26 +143,60 @@ public:
     }
 
     // Function to find the appropriate caster character and verify class and level
-    bool FindCasterAndVerify(const std::string& casterName, const std::string& spellName, std::string& casterCharacter, const std::string& requiredClass, int requiredLevel) {
-        // todo:
-        // For example, you might query your server's database or use in-game data.
-        // Replace the following placeholders with your implementation:
+    bool FindCasterAndVerify(const std::string& targetPlayer, std::string& casterCharacter, std::string& casterClass, int& casterLevel, const std::string& spellName) {
+        // Use the /who command to gather character information
+        std::string whoOutput;
+        if (EQWhos(targetPlayer.c_str(), whoOutput)) {
+            // Parse the /who output to extract the character's class and level
+            size_t classPos = whoOutput.find("Class: ");
+            if (classPos != std::string::npos) {
+                size_t levelPos = whoOutput.find("Level: ", classPos);
+                if (levelPos != std::string::npos) {
+                    // Extract class and level information
+                    casterClass = whoOutput.substr(classPos + 7, levelPos - classPos - 8); // Extract class name
+                    std::string levelStr = whoOutput.substr(levelPos + 7); // Extract level string
 
-        // Placeholder for querying character data by name (casterName)
-        // Example: casterCharacter = QueryCharacterName(casterName);
+                    // Convert level string to an integer (assuming it's in the form "50 (whatever)")
+                    size_t spacePos = levelStr.find(" ");
+                    if (spacePos != std::string::npos) {
+                        levelStr = levelStr.substr(0, spacePos); // Remove any additional information
+                    }
 
-        // Placeholder for querying character class by name (casterCharacter)
-        // Example: std::string casterClass = QueryCharacterClass(casterCharacter);
+                    casterLevel = atoi(levelStr.c_str());
 
-        // Placeholder for querying character level by name (casterCharacter)
-        // Example: int casterLevel = QueryCharacterLevel(casterCharacter);
+                    // Map class names to short names
+                    auto classShortNameIt = classShortNames.find(casterClass);
+                    if (classShortNameIt != classShortNames.end()) {
+                        casterClass = classShortNameIt->second;
+                    }
 
-        // Sample checks (adjust as needed)
-        if (casterCharacter == "MyCasterCharacter" && casterClass == "Wizard" && casterLevel >= 30) {
-            return true;
-        } else {
-            return false;
+                    // Handle special cases where the class name should be replaced
+                    if (casterClass == "oracle") {
+                        casterClass = "shaman";
+                    }
+
+                    // Set the caster character name
+                    casterCharacter = targetPlayer;
+
+                    // Check if the caster is eligible to cast the spell based on class and level
+                    // You can add your logic here
+                    // For example:
+                    // if (casterClass == "clr" && casterLevel >= 30) {
+                    //     return true;
+                    // }
+                    // Adjust the condition based on your requirements
+
+                    // For simplicity, allow any caster to cast any spell in this example
+                    return true;
+                }
+            }
         }
+
+        // If /who didn't return valid information or the caster is not eligible
+        casterCharacter.clear();
+        casterClass.clear();
+        casterLevel = 0;
+        return false;
     }
 };
 
@@ -153,7 +205,7 @@ BOOL pluginLoaded = false;
 BOOL InitializePlugin(PCHAR pName, PCHAR pVersion) {
     if (!pluginLoaded) {
         pluginLoaded = true;
-        BuffRequestPlugin *plugin = new BuffRequestPlugin();
+        BuffRequestPlugin* plugin = new BuffRequestPlugin();
     }
     return true;
 }
@@ -178,12 +230,7 @@ PLUGIN_API void OnPulse() {
     bool isInvisible = IsCharacterInvisible();
 
     // Pause casting if any of the conditions are met
-    if AbleToBuff(inCombat || isOtherPluginRunning || isInvisible) {
- 
-    }
-
-    // Check if another plugin is running (e.g., using MQ2Boxer)
-    if (IsOtherPluginRunning()) {
+    if (AbleToBuff() && (inCombat || isOtherPluginRunning || isInvisible)) {
         PauseCasting();
     } else {
         ResumeCasting();

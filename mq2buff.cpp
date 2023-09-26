@@ -168,11 +168,18 @@ BOOL ShutdownPlugin() {
 }
 
 PLUGIN_API void OnPulse() {
-    // Check if the character is performing an action (e.g., casting a spell)
-    if (IsCharacterPerformingAction()) {
-        PauseCasting();
-    } else {
-        ResumeCasting();
+    // Check if the character is in combat
+    bool inCombat = IsInCombat();
+
+    // Check if another plugin is running (e.g., using MQ2Boxer)
+    bool isOtherPluginRunning = IsOtherPluginRunning();
+
+    // Check if the character is invisible
+    bool isInvisible = IsCharacterInvisible();
+
+    // Pause casting if any of the conditions are met
+    if AbleToBuff(inCombat || isOtherPluginRunning || isInvisible) {
+ 
     }
 
     // Check if another plugin is running (e.g., using MQ2Boxer)

@@ -42,6 +42,39 @@ void LoadShortSpellNames() {
     }
 }
 
+// Handle special class names based on class titles
+void HandleSpecialClassNames(std::string& casterClass) {
+    if (casterClass == "Reaver" || casterClass == "Revenant" || casterClass == "Grave Lord") {
+        casterClass = "Shadow Knight"; // These titles are mapped to Shadow Knight
+    } else if (casterClass == "Champion" || casterClass == "Myrmidon" || casterClass == "Warlord") {
+        casterClass = "Warrior"; // These titles are mapped to Warrior
+    } else if (casterClass == "Cavalier" || casterClass == "Knight" || casterClass == "Crusader") {
+        casterClass = "Paladin"; // These titles are mapped to Paladin
+    } else if (casterClass == "Rake" || casterClass == "Blackguard" || casterClass == "Assassin") {
+        casterClass = "Rogue"; // These titles are mapped to Rogue
+    } else if (casterClass == "Pathfinder" || casterClass == "Outrider" || casterClass == "Warder") {
+        casterClass = "Ranger"; // These titles are mapped to Ranger
+    } else if (casterClass == "Disciple" || casterClass == "Master" || casterClass == "Grandmaster") {
+        casterClass = "Monk"; // These titles are mapped to Monk
+    } else if (casterClass == "Minstrel" || casterClass == "Troubadour" || casterClass == "Virtuoso") {
+        casterClass = "Bard"; // These titles are mapped to Bard
+    } else if (casterClass == "Mystic" || casterClass == "Luminary" || casterClass == "Oracle") {
+        casterClass = "Shaman"; // These titles are mapped to Shaman
+    } else if (casterClass == "Wanderer" || casterClass == "Preserver" || casterClass == "Hierophant") {
+        casterClass = "Druid"; // These titles are mapped to Druid
+    } else if (casterClass == "Vicar" || casterClass == "Templar" || casterClass == "High Priest") {
+        casterClass = "Cleric"; // These titles are mapped to Cleric
+    } else if (casterClass == "Channeler" || casterClass == "Evoker" || casterClass == "Sorcerer") {
+        casterClass = "Wizard"; // These titles are mapped to Wizard
+    } else if (casterClass == "Heretic" || casterClass == "Defiler" || casterClass == "Warlock") {
+        casterClass = "Necromancer"; // These titles are mapped to Necromancer
+    } else if (casterClass == "Elementalist" || casterClass == "Conjurer" || casterClass == "Arch Mage") {
+        casterClass = "Magician"; // These titles are mapped to Magician
+    } else if (casterClass == "Illusionist" || casterClass == "Beguiler" || casterClass == "Phantasmist") {
+        casterClass = "Enchanter"; // These titles are mapped to Enchanter
+    }
+}
+
 // Define the plugin class
 class BuffRequestPlugin : public MQ2Plugin {
 public:
@@ -170,10 +203,8 @@ public:
                         casterClass = classShortNameIt->second;
                     }
 
-                    // Handle special cases where the class name should be replaced
-                    if (casterClass == "oracle") {
-                        casterClass = "shaman";
-                    }
+                    // Handle special class names based on class titles
+                    HandleSpecialClassNames(casterClass);
 
                     // Set the caster character name
                     casterCharacter = targetPlayer;

@@ -166,3 +166,19 @@ BOOL ShutdownPlugin() {
     }
     return true;
 }
+
+PLUGIN_API void OnPulse() {
+    // Check if the character is performing an action (e.g., casting a spell)
+    if (IsCharacterPerformingAction()) {
+        PauseCasting();
+    } else {
+        ResumeCasting();
+    }
+
+    // Check if another plugin is running (e.g., using MQ2Boxer)
+    if (IsOtherPluginRunning()) {
+        PauseCasting();
+    } else {
+        ResumeCasting();
+    }
+}
